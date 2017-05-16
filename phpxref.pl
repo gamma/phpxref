@@ -634,7 +634,7 @@ sub tagfile {
         $fext=($is_case_tolerant && (lc $1)) || $1;
         do {$_=$scanfile_filename;return;} if $bad_extensions{$fext};
     }
-    if (defined(%good_extensions)) {
+    if (%good_extensions) {
         do {$_=$scanfile_filename;return;} unless defined($fext);
         do {$_=$scanfile_filename;return;} unless defined($good_extensions{$fext});
     }
@@ -753,7 +753,7 @@ sub scanfile {
             s|^\s*//.*?$||g;
             if (m%^\s*(class)\s+(\w+)\s*(\{|extends|implements|\Z)%i
                 || m%^\s*(interface)\s+(\w+)%i) { # matched a class or interface definition
-                $isinterface = lc($1) eq 'interface';
+                $isinterface = lc $1 eq 'interface';
                 $class=lc($2);
                 $orgname = $2;
                 if ($briefcomment && $line-$commentendline>3) { 
@@ -805,37 +805,37 @@ sub scanfile {
             # Variables are matched here to include those that
             # occur in function definitions.
             while (/\$\{{0,1}(\w+)/g) { # match variables 0.5
-                push(@{$var_references{$1}},
+                push(@{$var_references{lc $1}},
                     {
                     'subdir'    => "$subdir/",
                     'filename'  => $filename,
                     'line'      => $line
                     }
                 );
-                if (!$var_ids{$1})  { $var_ids{$1}=uri_encode($1); }
-                if (!$var_nums{$1}) { $var_nums{$1}=$var_num++; }
+                if (!$var_ids{lc $1})  { $var_ids{lc $1}=uri_encode($1); }
+                if (!$var_nums{lc $1}) { $var_nums{lc $1}=$var_num++; }
             }
             while (/\$\{{0,1}(\w+)\s*=[^=]/g) { # match variable definitions 0.5
-                push(@{$var_definitions{$1}},
+                push(@{$var_definitions{lc $1}},
                     {
                     'subdir'    => "$subdir/",
                     'filename'  => $filename,
                     'line'      => $line
                     }
                 );
-                if (!$var_ids{$1})  { $var_ids{$1}=uri_encode($1); }
-                if (!$var_nums{$1}) { $var_nums{$1}=$var_num++; }
+                if (!$var_ids{lc $1})  { $var_ids{lc $1}=uri_encode($1); }
+                if (!$var_nums{lc $1}) { $var_nums{lc $1}=$var_num++; }
             }
             while (/\$\w+->(\w+)[^\w(]/g) { # match class variables
-                push(@{$var_references{$1}},
+                push(@{$var_references{lc $1}},
                     {
                     'subdir'    => "$subdir/",
                     'filename'  => $filename,
                     'line'      => $line
                     }
                 );
-                if (!$var_ids{$1})  { $var_ids{$1}=uri_encode($1); }
-                if (!$var_nums{$1}) { $var_nums{$1}=$var_num++; }
+                if (!$var_ids{lc $1})  { $var_ids{lc $1}=uri_encode($1); }
+                if (!$var_nums{lc $1}) { $var_nums{lc $1}=$var_num++; }
             }
             while (/\b([A-Z\d_]{3,40})\b/g) { # match a constant reference
                 push(@{$const_references{$1}},
@@ -933,7 +933,7 @@ sub scanfile {
                 }
             } else { # not in a function definition
                 while (/\b(\w+)\s*\(/g) { # match a function reference
-                    $funcname=lc($1); # treat without case sensitivity
+                    $funcname=lc $1; # treat without case sensitivity
                     push(@{$func_references{$funcname}},
                         {
                         'subdir'    => "$subdir/",
@@ -1114,7 +1114,7 @@ sub processpage {
             if (length($functionref->{"briefcomment"})||length($functionref->{"comment"})||scalar(keys %{$functionref->{"commenttags"}})) {
                 $classbody{$classname}.="<b>".formatstr($functionref->{"briefcomment"}, 1)."</b><BR>";
                 $classbody{$classname}.=formatstr($functionref->{"comment"}, 1);
-                if (defined(%doc_tags)) {
+                if (%doc_tags) {
                     foreach $tag (keys %doc_tags) {
                         foreach $tagval (@{$functionref->{"commenttags"}->{$tag}}) {
                             $tagval = formatstr($tagval, 1);
@@ -1154,7 +1154,7 @@ sub processpage {
                 if (length($classdata->{"briefcomment"})||length($classdata->{"comment"})||scalar(keys %{$classdata->{"commenttags"}})) {
                     $funcbody.="<b>".formatstr($classdata->{'briefcomment'}, 1)."</b><br>\n";
                     $funcbody.=formatstr($classdata->{'comment'}, 1);
-                    if (defined(%doc_tags)) {
+                    if (%doc_tags) {
                         foreach $tag (keys %doc_tags) {
                             foreach $tagval (@{$functionref->{"commenttags"}->{$tag}}) {
                                 $tagval = formatstr($tagval, 1);
@@ -1414,20 +1414,20 @@ sub processpage {
                     }
                     /gie; # if $sub_class3;
                 $slice =~ s/(\$\w+->)(\w+)([^\w(])/ # Link class variables
-                    if (defined($var_ids{$2})) {
-                        if (!defined($var_nums{$1})) { $var_nums{$1}=$var_num++; }
+                    if (defined($var_ids{lc $2})) {
+                        if (!defined($var_nums{lc $2})) { $var_nums{lc $2}=$var_num++; }
                         $id='~SLICE'.$slicenum++.'~';
-                        $slicerepl{$id}="<a onClick=\"logVariable('$2')\" class=\"var it$var_nums{$1}\" onMouseOver=\"hilite($var_nums{$1})\" onMouseOut=\"lolite()\" href=\"${relroot}_variables\/$var_ids{$2}.$ext\">$2<\/a>";
+                        $slicerepl{$id}="<a onClick=\"logVariable('$2')\" class=\"var it".$var_nums{lc $2}."\" onMouseOver=\"hilite(".$var_nums{lc $2}.")\" onMouseOut=\"lolite()\" href=\"${relroot}_variables\/".$var_ids{lc $2}.".$ext\">$2<\/a>";
                         $1.$id.$3;
                     } else {
                         $&;
                     }
                     /ge;
                 $slice =~ s/\$\{{0,1}(\w+)/ # Link variables
-                    if (defined($var_ids{$1})) {
-                        if (!defined($var_nums{$1})) { $var_nums{$1}=$var_num++; }
+                    if (defined($var_ids{lc $1})) {
+                        if (!defined($var_nums{lc $1})) { $var_nums{lc $1}=$var_num++; }
                         $id='~SLICE'.$slicenum++.'~';
-                        $slicerepl{$id}="<a class=\"var it$var_nums{$1}\" onMouseOver=\"hilite($var_nums{$1})\" onMouseOut=\"lolite()\" onClick=\"logVariable('$1')\" href=\"${relroot}_variables\/$var_ids{$1}.$ext\">\$$1<\/a>";
+                        $slicerepl{$id}="<a class=\"var it".$var_nums{lc $1}."\" onMouseOver=\"hilite(".$var_nums{lc $1}.")\" onMouseOut=\"lolite()\" onClick=\"logVariable('$1')\" href=\"${relroot}_variables\/".$var_ids{lc $1}.".$ext\">\$$1<\/a>";
                         $id;
                     } else {
                         $&;
@@ -1722,10 +1722,10 @@ sub generate_references {
     print $INDEX &javascript_search(1);
     print $INDEX "<h2>Variable List (alphabetical)</h2>\n";
     print $INDEX "Total unique variables names: ".scalar(keys %var_ids)."<ul>\n";
-    if (defined(@varlist_defs)) {
+    if (@varlist_defs) {
         print $INDEX "<li><a href=\"#def\">Variables defined on the site</a>: ".scalar(@varlist_defs)."</li>\n";
     }
-    if (defined(@varlist_other)) {
+    if (@varlist_other) {
         print $INDEX "<li><a href=\"#other\">Other Variables</a>: ".scalar(@varlist_other)."</li>\n";
     }
     print $INDEX "</ul>\n";
@@ -1854,13 +1854,13 @@ sub generate_references {
     print $INDEX &javascript_search(1);
     print $INDEX "<h2>Function List (alphabetical)</h2>\n"; 
     print $INDEX "Total unique function names: ".scalar(keys %func_ids)."<ul>\n";
-    if (defined(@funclist_defs)) {
+    if (@funclist_defs) {
         print $INDEX "<li><a href=\"#def\">Functions defined on the site</A>: ".scalar(@funclist_defs)."</li>\n";
     }
-    if (defined(@funclist_php)) {
+    if (@funclist_php) {
         print $INDEX "<li><a href=\"#php\">PHP functions used on the site</a>: ".scalar(@funclist_php)."</li>\n";
     }
-    if (defined(@funclist_other)) {
+    if (@funclist_other) {
         print $INDEX "<li><a href=\"#other\">Undefined functions</a>: ".scalar(@funclist_other)."</li>\n";
     }
     print $INDEX "</ul>\n";
@@ -2247,7 +2247,7 @@ sub uri_encode {
     my $str=shift;
     $str =~ s/^(con|prn|aux|clock\$|nul|lpt\d|com\d)(\.|\z)/-$1$2/i; # you have no idea how much i hate windows.
     $str =~ s/([\x00-\x20"#%;<>?{}|\\\\^~`\[\]\x7F-\xFF])/sprintf '%%%.2X' => ord $1/eg;
-    return $str;
+    return(lc($str)); # always return lowercase since we do not want to spoil case-insensitive file systems
 }
 
 sub usage_die {
